@@ -44,7 +44,8 @@ def get_youdao_definition(word, appKey, appSecret):
             return "; ".join(r["translation"])
         else:
             return ""
-    except:
+    except Exception as e:
+        st.warning(f"调用有道API时出错：{e}")
         return ""
 
 # 相似度计算函数
@@ -64,20 +65,23 @@ appSecret = st.text_input("App Secret", type="password")
 uploaded_file = st.file_uploader("上传词库Excel文件（含 单词 和 释义 两列）")
 
 if uploaded_file and appKey and appSecret:
-    df = pd.read_excel(uploaded_file)
-    if "单词" in df.columns and "释义" in df.columns:
-        df["有道释义"] = df["单词"].apply(lambda w: get_youdao_definition(str(w), appKey, appSecret))
-        df["相似度"] = df.apply(lambda row: similarity(row["释义"], row["有道释义"]), axis=1)
-        df["需人工复查"] = df["相似度"] < 0.6
+    try:
+        df = pd.read_excel(uploaded_file)
+        if "单词" in df.columns and "释义" in df.columns:
+            with st.spinner("正在比对释义，请稍候..."):
+                df["有道释义"] = df["单词"].apply(lambda w: get_youdao_definition(str(w), appKey, appSecret))
+                df["相似度"] = df.apply(lambda row: similarity(row["释义"], row["有道释义"]), axis=1)
+                df["需人工复查"] = df["相似度"] < 0.6
 
-        st.success("比对完成，以下是结果：")
-        st.dataframe(df)
+            st.success("比对完成，以下是结果：")
+            st.dataframe(df)
 
-        # 创建字节流缓冲区并导出为 Excel
-        output = io.BytesIO()
-        df.to_excel(output, index=False, engine='openpyxl')
-        st.download_button("下载结果为Excel", data=output.getvalue(), file_name="释义比对结果.xlsx")
-    else:
-        st.error("Excel中必须包含 '单词' 和 '释义' 两列")
+            output = io.BytesIO()
+            df.to_excel(output, index=False, engine='openpyxl')
+            st.download_button("下载结果为Excel", data=output.getvalue(), file_name="释义比对结果.xlsx")
+        else:
+            st.error("Excel中必须包含 '单词' 和 '释义' 两列")
+    except Exception as e:
+        st.error(f"处理过程中出现错误：{e}")
 else:
     st.info("请上传文件并填写API信息")
