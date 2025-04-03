@@ -3,3 +3,5 @@ pandas
 requests
 scikit-learn
 openpyxl
+beautifulsoup4
+lxml
