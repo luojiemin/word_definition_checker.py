@@ -72,7 +72,13 @@ if uploaded_file and appKey and appSecret:
         st.success("比对完成，以下是结果：")
         st.dataframe(df)
 
-        st.download_button("下载结果为Excel", data=df.to_excel(index=False), file_name="释义比对结果.xlsx")
+        import io
+
+# 创建字节流缓冲区
+output = io.BytesIO()
+df.to_excel(output, index=False, engine='openpyxl')
+st.download_button("下载结果为Excel", data=output.getvalue(), file_name="释义比对结果.xlsx")
+
     else:
         st.error("Excel中必须包含 '单词' 和 '释义' 两列")
 else:
